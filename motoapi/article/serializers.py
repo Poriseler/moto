@@ -3,7 +3,7 @@ Serializers for article API.
 """
 from rest_framework import serializers
 
-from core.models import Article, Tag
+from core.models import Article, Tag, Image
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -60,3 +60,23 @@ class ArticleDetailSerializer(ArticleSerializer):
     class Meta(ArticleSerializer.Meta):
         fields = ArticleSerializer.Meta.fields + ['lead', 'main_text']
         read_only_fields = ArticleSerializer.Meta.read_only_fields + ['user']
+
+
+class ArticleThumbnailSerializer(serializers.ModelSerializer):
+    """Serializer for Article thumbnail."""
+
+    class Meta:
+        model = Article
+        fields = ['id', 'thumbnail']
+        read_only_fields = ['id']
+        extra_kwargs = {'thumbnail': {'required': 'True'}}
+
+
+class ImageSerializer(serializers.ModelSerializer):
+    """Serializer for Image."""
+
+    class Meta:
+        model = Image
+        fields = ['id', 'article', 'photo']
+        read_only_fields = ['id',]
+        extra_kwargs = {'photo': {'required': 'True'}}

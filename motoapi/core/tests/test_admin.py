@@ -7,11 +7,15 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.test import Client
 from rest_framework import status
-from core.models import Article, Tag
+from core.models import Article, Tag, Image as Im
+
+from PIL import Image
+import tempfile
 
 CREATE_USER_URL = reverse('admin:core_user_add')
 CREATE_ARTICLE_URL = reverse('admin:core_article_add')
 CREATE_TAG_URL = reverse('admin:core_tag_add')
+CREATE_IMAGE_URL = reverse('admin:core_image_add')
 
 
 class AdminSiteTests(TestCase):
@@ -89,3 +93,32 @@ class AdminSiteTests(TestCase):
         res = self.client.get(url)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+    def test_tag_image_page(self):
+        """Tests that page for creating images opens correctly"""
+        res = self.client.get(CREATE_IMAGE_URL)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+    # def test_image_update_page(self):
+    #     """Tests that page for updating images opens correctly"""
+    #     article = Article.objects.create(
+    #         header='Test header',
+    #         lead='Test lead',
+    #         main_text='Main text',
+    #         slug='test-header',
+    #         user=self.user
+    #     )
+
+    #     with tempfile.NamedTemporaryFile(suffix='.jpg') as image_file:
+    #         img = Image.new('RGB', (10, 10))
+    #         img.save(image_file, format='JPEG')
+    #         image_file.seek(0)
+    #         photo = Im.objects.create(
+    #             photo=image_file,
+    #             article=article
+    #         )
+    #     url = reverse('admin:core_image_change', args=[1])
+    #     res = self.client.get(url)
+
+    #     self.assertEqual(res.status_code, status.HTTP_200_OK)

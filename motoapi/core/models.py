@@ -5,6 +5,24 @@ Database models.
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from motoapi import settings
+import os
+import uuid
+
+
+def thumbnail_file_path(instance, filename):
+    """Generates file path for thumbnail."""
+    ext = os.path.splitext(filename)[1]
+    filename = f'{uuid.uuid4()}_thumbnail{ext}'
+
+    return os.path.join('uploads', 'article', 'thumbnails', filename)
+
+
+def image_file_path(instance, filename):
+    """Generates file path for image."""
+    ext = os.path.splitext(filename)[1]
+    filename = f'{uuid.uuid4()}{ext}'
+
+    return os.path.join('uploads', 'article', filename)
 
 
 class Tag(models.Model):
@@ -59,6 +77,13 @@ class Article(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
                              on_delete=models.SET_NULL)
     tags = models.ManyToManyField('Tag')
+    thumbnail = models.ImageField(null=True, upload_to=thumbnail_file_path)
 
     def __str__(self) -> str:
         return self.header
+
+
+class Image(models.Model):
+    """Image object."""
+    article = models.ForeignKey(Article, on_delete=models.CASCADE)
+    photo = models.ImageField(upload_to=image_file_path)
