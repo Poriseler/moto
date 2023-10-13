@@ -7,7 +7,8 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.decorators import action
 from rest_framework.response import Response
-
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.views import APIView
 
 from core.custom_permissions import IsOwnerOrReadOnly
 from core.models import Article, Tag, Image
@@ -53,6 +54,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
         article = self.get_object()
         serializer = self.get_serializer(article, data=request.data)
 
+
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -75,6 +77,15 @@ class ImagesViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
     authentication_classes = [TokenAuthentication]
 
+
+    def get_serializer_class(self):
+        """Returns serializer class for request."""
+
+        if self.action == 'multi_upload':
+            return serializers.MultiImageSerializer
+
+        return self.serializer_class
+
     def get_queryset(self):
         article_id = self.request.query_params.get('article_id')
         queryset = self.queryset
@@ -84,8 +95,36 @@ class ImagesViewSet(viewsets.ModelViewSet):
 
     @action(methods=['POST'], detail=False, url_path='multi-upload')
     def multi_upload(self, request, *args, **kwargs):
-        print(request.data)
-        serializer = self.get_serializer(data=request.data, many=True)
+        photos = request.FILES.getlist('photo', None)
+
+        data = { 'article' : request.POST.get('article', None)}
+
+        serializer = self.get_serializer(data=data, context={'photos':photos})
         serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
+        serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+
+# class ImagesUploadView(generics.CreateAPIView):
+class ImagesUploadView(generics.ListCreateAPIView):
+
+    parser_classes = [FormParser, MultiPartParser]
+    serializer_class = serializers.CustomImagesSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    authentication_classes = [TokenAuthentication]
+    queryset = Image.objects.all()
+
+    def get_serializer_class(self):
+
+        if self.request.method=='GET':
+            return serializers.ImageSerializer
+        return self.serializer_class
+
+    def get_queryset(self):
+        article_id = self.request.query_params.get('article_id')
+        queryset = self.queryset
+        if article_id:
+            return queryset.filter(article__id__exact=article_id)
+        return queryset.order_by('-id')
+

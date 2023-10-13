@@ -14,5 +14,6 @@ router.register('images', views.ImagesViewSet)
 app_name = 'article'
 
 urlpatterns = [
-    path('', include(router.urls))
+    path('', include(router.urls)),
+    path('upload/images/', views.ImagesUploadView.as_view())
 ]
