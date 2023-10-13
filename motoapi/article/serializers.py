@@ -82,68 +82,70 @@ class ImageSerializer(serializers.ModelSerializer):
         extra_kwargs = {'photo': {'required': 'True'}}
 
 
+# class ImageSerializer2(serializers.ModelSerializer):
+#     """Serializer for Image."""
 
-class MultiImageSerializer(serializers.Serializer):
-    """Serializer for Image."""
-    article = serializers.CharField()
-
-    def create(self, validated_data):
-        article_obj = Article.objects.get(id=validated_data.get('article'))
-
-        for photo in self.context['photos']:
-            Image.objects.create(article=article_obj, photo=photo)
+#     class Meta:
+#         model = Image
+#         fields = ['id', 'article', 'photo']
+#         read_only_fields = ['id',]
 
 
-        return {'article': article_obj.id}
+# class MultiImageSerializer(serializers.Serializer):
+#     """Serializer for Image."""
+#     article = serializers.CharField()
+
+#     def create(self, validated_data):
+#         article_obj = Article.objects.get(id=validated_data.get('article'))
+
+#         for photo in self.context['photos']:
+#             Image.objects.create(article=article_obj, photo=photo)
+
+#         return {'article': article_obj.id}
 
 
+# class CustomImagesSerializer(serializers.Serializer):
+#     article = serializers.ListField(
+#         child=serializers.CharField()
+#     )
+#     photos = serializers.ListField(
+#         child=serializers.ImageField()
+#     )
 
-class CustomImagesSerializer(serializers.Serializer):
-    article = serializers.ListField(
-        child=serializers.CharField()
-    )
-    photos = serializers.ListField(
-        child=serializers.ImageField()
-    )
+#     def create(self, validated_data):
+#         article_id = validated_data.get('article')[0]
+#         article_obj = Article.objects.get(id=article_id)
+#         created_photos = []
+#         for photo_obj in validated_data.get('photos'):
 
-    def create(self, validated_data):
-        article_id = validated_data.get('article')[0]
-        article_obj = Article.objects.get(id=article_id)
-        created_photos =[]
-        for photo_obj in validated_data.get('photos') :
+#             img = Image.objects.create(article=article_obj, photo=photo_obj)
+#             created_photos.append(photo_obj.name)
 
-            img = Image.objects.create(article=article_obj, photo=photo_obj)
-            created_photos.append(photo_obj.name)
+#         response = {'article': article_id, 'photos': created_photos}
 
-        response = {'article': article_id, 'photos': created_photos}
-
-        return response
+#         return response
 
 
-class CustomImagesListSerializer(serializers.ListSerializer):
-    def create(self, validated_data):
-        books = [Book(**item) for item in validated_data]
-        return Book.objects.bulk_create(books)
+# class CustomImagesSerializer2(serializers.Serializer):
+#     article = serializers.ListField(
+#         child=serializers.CharField()
+#     )
+#     photos = serializers.ListField(
+#         child=serializers.ImageField()
+#     )
 
-class CustomImagesSerializer2(serializers.Serializer):
-    article = serializers.ListField(
-        child=serializers.CharField()
-    )
-    photos = serializers.ListField(
-        child=serializers.ImageField()
-    )
+#     class Meta:
+#         list_serializer_class = CustomImagesListSerializer
 
-    class Meta:
-        list_serializer_class = CustomImagesListSerializer
-    def create(self, validated_data):
-        article_id = validated_data.get('article')[0]
-        article_obj = Article.objects.get(id=article_id)
-        created_photos =[]
-        for photo_obj in validated_data.get('photos') :
+#     def create(self, validated_data):
+#         article_id = validated_data.get('article')[0]
+#         article_obj = Article.objects.get(id=article_id)
+#         created_photos = []
+#         for photo_obj in validated_data.get('photos'):
 
-            img = Image.objects.create(article=article_obj, photo=photo_obj)
-            created_photos.append(photo_obj.name)
+#             img = Image.objects.create(article=article_obj, photo=photo_obj)
+#             created_photos.append(photo_obj.name)
 
-        response = {'article': article_id, 'photos': created_photos}
+#         response = {'article': article_id, 'photos': created_photos}
 
-        return response
+#         return response

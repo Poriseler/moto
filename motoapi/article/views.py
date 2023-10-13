@@ -30,6 +30,8 @@ class ArticleViewSet(viewsets.ModelViewSet):
             return serializers.ArticleSerializer
         if self.action == 'upload_thumbnail':
             return serializers.ArticleThumbnailSerializer
+        if self.action == 'upload_photos':
+            return serializers.ImageSerializer
 
         return self.serializer_class
 
@@ -54,11 +56,23 @@ class ArticleViewSet(viewsets.ModelViewSet):
         article = self.get_object()
         serializer = self.get_serializer(article, data=request.data)
 
-
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
 
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(methods=['POST'], detail=True, url_path='upload-photos')
+    def upload_photos(self, request, slug=None):
+        article = self.get_object()
+        data = [{'photo': photo, 'article': article.id}
+                for photo in request.data.getlist('photo')]
+        print(data)
+        serializer = self.get_serializer(data=data, many=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -70,61 +84,71 @@ class TagViewSet(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication]
 
 
-class ImagesViewSet(viewsets.ModelViewSet):
-
+class ImagesViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = serializers.ImageSerializer
-    queryset = Image.objects.all()
-    permission_classes = [IsAuthenticatedOrReadOnly]
-    authentication_classes = [TokenAuthentication]
-
-
-    def get_serializer_class(self):
-        """Returns serializer class for request."""
-
-        if self.action == 'multi_upload':
-            return serializers.MultiImageSerializer
-
-        return self.serializer_class
+    queryset = Image.objects.all().order_by('-id')
 
     def get_queryset(self):
-        article_id = self.request.query_params.get('article_id')
         queryset = self.queryset
+        article_id = self.request.query_params.get('article-id', None)
         if article_id:
-            return queryset.filter(article__id__exact=article_id)
-        return queryset.order_by('-id')
+            print(article_id)
+            return queryset.filter(article__id__exact=article_id).order_by('-id')
+        return queryset
 
-    @action(methods=['POST'], detail=False, url_path='multi-upload')
-    def multi_upload(self, request, *args, **kwargs):
-        photos = request.FILES.getlist('photo', None)
 
-        data = { 'article' : request.POST.get('article', None)}
+# class ImagesViewSet(viewsets.ModelViewSet):
 
-        serializer = self.get_serializer(data=data, context={'photos':photos})
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+#     serializer_class = serializers.ImageSerializer
+#     queryset = Image.objects.all()
+#     permission_classes = [IsAuthenticatedOrReadOnly]
+#     authentication_classes = [TokenAuthentication]
 
+#     def get_serializer_class(self):
+#         """Returns serializer class for request."""
+
+#         if self.action == 'multi_upload':
+#             return serializers.MultiImageSerializer
+
+#         return self.serializer_class
+
+#     def get_queryset(self):
+#         article_id = self.request.query_params.get('article_id')
+#         queryset = self.queryset
+#         if article_id:
+#             return queryset.filter(article__id__exact=article_id)
+#         return queryset.order_by('-id')
+
+    # @action(methods=['POST'], detail=False, url_path='multi-upload')
+    # def multi_upload(self, request, *args, **kwargs):
+    #     photos = request.FILES.getlist('photo', None)
+
+    #     data = {'article': request.POST.get('article', None)}
+
+    #     serializer = self.get_serializer(data=data, context={'photos': photos})
+    #     serializer.is_valid(raise_exception=True)
+    #     serializer.save()
+    #     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 # class ImagesUploadView(generics.CreateAPIView):
-class ImagesUploadView(generics.ListCreateAPIView):
+# class ImagesUploadView(generics.ListCreateAPIView):
 
-    parser_classes = [FormParser, MultiPartParser]
-    serializer_class = serializers.CustomImagesSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
-    authentication_classes = [TokenAuthentication]
-    queryset = Image.objects.all()
+#     parser_classes = [FormParser, MultiPartParser]
+#     serializer_class = serializers.CustomImagesSerializer
+#     permission_classes = [IsAuthenticatedOrReadOnly]
+#     authentication_classes = [TokenAuthentication]
+#     queryset = Image.objects.all()
 
-    def get_serializer_class(self):
+#     def get_serializer_class(self):
 
-        if self.request.method=='GET':
-            return serializers.ImageSerializer
-        return self.serializer_class
+#         if self.request.method == 'GET':
+#             return serializers.ImageSerializer
+#         return self.serializer_class
 
-    def get_queryset(self):
-        article_id = self.request.query_params.get('article_id')
-        queryset = self.queryset
-        if article_id:
-            return queryset.filter(article__id__exact=article_id)
-        return queryset.order_by('-id')
-
+#     def get_queryset(self):
+#         article_id = self.request.query_params.get('article_id')
+#         queryset = self.queryset
+#         if article_id:
+#             return queryset.filter(article__id__exact=article_id)
+#         return queryset.order_by('-id')

@@ -15,5 +15,5 @@ app_name = 'article'
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('upload/images/', views.ImagesUploadView.as_view())
+    # path('upload/images/', views.ImagesUploadView.as_view())
 ]
