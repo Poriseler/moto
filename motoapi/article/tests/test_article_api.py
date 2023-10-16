@@ -4,9 +4,9 @@ Tests for article API.
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from core.models import Article, Tag
+from core.models import Article, Tag, Image
 
-from PIL import Image
+from PIL import Image as Im
 import os
 import tempfile
 from django.urls import reverse
@@ -17,9 +17,14 @@ from article.serializers import ArticleSerializer, ArticleDetailSerializer
 ARTICLE_URL = reverse('article:article-list')
 
 
-def image_upload_url(article_id):
-    """Created and returns and image upload URL."""
+def thumbnail_upload_url(article_id):
+    """Creates and returns and thumbnail upload URL."""
     return reverse('article:article-upload-thumbnail', args=[article_id])
+
+
+def photos_upload_url(article_id):
+    """Creates and returns images upload URL"""
+    return reverse('article:article-upload-photos', args=[article_id])
 
 
 def article_detail(article_id):
@@ -69,7 +74,6 @@ class PublicArticleApiTests(TestCase):
         """Tests retriving details of specific article."""
         user = create_user(email='test@example.com', password='pass123')
         article = create_article(user=user)
-        # url = article_detail(article.id)
         url = article_detail(article.slug)
         res = self.client.get(url)
 
@@ -172,6 +176,20 @@ class PublicArticleApiTests(TestCase):
         self.assertIn(serialized_article2.data, res.data)
         self.assertNotIn(serialized_article3.data, res.data)
 
+    def test_upload_images_unauthorized_error(self):
+        """Tests uploading images to article by anonymous user."""
+        user = create_user(email='user@example.com', password='testpass123')
+        article = create_article(user=user)
+        url = photos_upload_url(article.slug)
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as image_file:
+            img = Im.new('RGB', (10, 10))
+            img.save(image_file, format='JPEG')
+            image_file.seek(0)
+            res = self.client.post(url,
+                                   {'article': self.article.slug, 'photo': image_file}, format='multipart')
+
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+
 
 class PrivateArticleApiTests(TestCase):
     """Tests for authenticated requests."""
@@ -205,7 +223,6 @@ class PrivateArticleApiTests(TestCase):
         payload = {
             'main_text': 'Test changed main text'
         }
-        # url = article_detail(article.id)
         url = article_detail(article.slug)
         res = self.client.patch(url, payload)
         article.refresh_from_db()
@@ -218,7 +235,6 @@ class PrivateArticleApiTests(TestCase):
         """Tests if changing user assigned to article is ignored by serializer."""
         new_user = create_user(email="user2@example.com", password='pass123')
         article = create_article(user=self.user)
-        # url = article_detail(article.id)
         url = article_detail(article.slug)
         payload = {'user': new_user.id}
 
@@ -231,7 +247,6 @@ class PrivateArticleApiTests(TestCase):
         """Tests if deleting another user article raises error."""
         new_user = create_user(email="user2@example.com", password='pass123')
         article = create_article(user=new_user)
-        # url = article_detail(article.id)
         url = article_detail(article.slug)
         res = self.client.delete(url)
 
@@ -247,7 +262,6 @@ class PrivateArticleApiTests(TestCase):
             'lead': 'Test lead changed',
             'main_text': 'Main text changed'
         }
-        # url = article_detail(article.id)
         url = article_detail(article.slug)
         res = self.client.patch(url, payload)
 
@@ -334,7 +348,6 @@ class PrivateArticleApiTests(TestCase):
                 'slug': 'test-tag'
             }
         ]}
-        # url = article_detail(article.id)
         url = article_detail(article.slug)
         res = self.client.patch(url, payload, format='json')
         self.assertEqual(res.status_code, status.HTTP_200_OK)
@@ -355,7 +368,6 @@ class PrivateArticleApiTests(TestCase):
         ]}
         article = create_article(user=self.user)
 
-        # url = article_detail(article.id)
         url = article_detail(article.slug)
         res = self.client.patch(url, payload, format='json')
         self.assertEqual(res.status_code, status.HTTP_200_OK)
@@ -375,7 +387,6 @@ class PrivateArticleApiTests(TestCase):
 
         payload = {'tags': []}
 
-        # url = article_detail(article.id)
         url = article_detail(article.slug)
         res = self.client.patch(url, payload, format='json')
         article.refresh_from_db()
@@ -397,11 +408,11 @@ class ThumbnailUploadTests(TestCase):
 
     def test_upload_thumbnail(self):
         """Tests uploading thumbnail to article"""
-        # url = image_upload_url(self.article.id)
-        url = image_upload_url(self.article.slug)
+
+        url = thumbnail_upload_url(self.article.slug)
 
         with tempfile.NamedTemporaryFile(suffix='.jpg') as image_file:
-            img = Image.new('RGB', (10, 10))
+            img = Im.new('RGB', (10, 10))
             img.save(image_file, format='JPEG')
             image_file.seek(0)
             payload = {'thumbnail': image_file}
@@ -413,11 +424,33 @@ class ThumbnailUploadTests(TestCase):
         self.assertIn('thumbnail', res.data)
         self.assertTrue(os.path.exists(self.article.thumbnail.path))
 
-    def test_upload_image_bad_request(self):
-        """Tests uploading invalid image."""
-        # url = image_upload_url(self.article.id)
-        url = image_upload_url(self.article.slug)
+    def test_upload_thumbnail_bad_request(self):
+        """Tests uploading invalid thumbnail."""
+
+        url = thumbnail_upload_url(self.article.slug)
         payload = {'thumbnail': 'not_img'}
         res = self.client.post(url, payload, format='multipart')
 
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_upload_images_success(self):
+        """Tests uploading new images to article."""
+        url = photos_upload_url(self.article.slug)
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as image_file:
+            img = Im.new('RGB', (10, 10))
+            img.save(image_file, format='JPEG')
+            image_file.seek(0)
+            res = self.client.post(url,
+                                   {'article': self.article.slug, 'photo': image_file}, format='multipart')
+
+        images = Image.objects.filter(article__slug__exact=self.article.slug)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(images.count(), 1)
+
+    def test_upload_images_bad_request(self):
+        """Tests uploading invalid image."""
+        url = photos_upload_url(self.article.slug)
+        res = self.client.post(
+            url, {'article': self.article.slug, 'photo': 'NotAPhoto'})
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
