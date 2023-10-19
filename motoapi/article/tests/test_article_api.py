@@ -186,7 +186,7 @@ class PublicArticleApiTests(TestCase):
             img.save(image_file, format='JPEG')
             image_file.seek(0)
             res = self.client.post(url,
-                                   {'article': self.article.slug, 'photo': image_file}, format='multipart')
+                                   {'article': article.slug, 'photo': image_file}, format='multipart')
 
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
 

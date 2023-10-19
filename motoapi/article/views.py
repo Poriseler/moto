@@ -43,12 +43,21 @@ class ArticleViewSet(viewsets.ModelViewSet):
         """Returns articles and filters for tags if specified as parameter."""
         tag = self.request.query_params.get('tag')
         query = self.request.query_params.get('query')
+        limit = self.request.query_params.get('limit')
+        category = self.request.query_params.get('category')
         queryset = self.queryset
         if tag:
             queryset = queryset.filter(tags__slug__icontains=tag)
         if query:
             queryset = queryset.filter(header__icontains=query)
-        return queryset.order_by('-id')
+        if category:
+            queryset = queryset.filter(category__iexact=category)
+        queryset = queryset.order_by('-id')
+        if limit:
+            queryset = queryset[:int(limit)]
+        return queryset
+
+
 
     @action(methods=['POST'], detail=True, url_path='upload-thumbnail')
     def upload_thumbnail(self, request, slug=None):
@@ -67,7 +76,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
         article = self.get_object()
         data = [{'photo': photo, 'article': article.id}
                 for photo in request.data.getlist('photo')]
-        # print(data)
+        
         serializer = self.get_serializer(data=data, many=True)
 
         if serializer.is_valid():

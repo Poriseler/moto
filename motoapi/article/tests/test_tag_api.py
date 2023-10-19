@@ -87,7 +87,7 @@ class PublicTagsApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
-class PublicTagsApiTests(TestCase):
+class PrivateTagsApiTests(TestCase):
     """Tests for authenticated requests."""
 
     def setUp(self):

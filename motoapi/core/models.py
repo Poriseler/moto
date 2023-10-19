@@ -70,6 +70,13 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 class Article(models.Model):
     """Article object."""
+    CATEGORY_CHOICES = [
+        ('newsy','Newsy'),
+        ('felietony','Felietony'),
+        ('relacje','Relacje'),
+        ('testy','Testy')
+    ]
+
     header = models.CharField(max_length=255)
     lead = models.TextField(max_length=500)
     main_text = models.TextField()
@@ -78,6 +85,7 @@ class Article(models.Model):
                              on_delete=models.SET_NULL)
     tags = models.ManyToManyField('Tag')
     thumbnail = models.ImageField(null=True, upload_to=thumbnail_file_path)
+    category = models.CharField(max_length=255, choices=CATEGORY_CHOICES, default='newsy')
 
     def __str__(self) -> str:
         return self.header
