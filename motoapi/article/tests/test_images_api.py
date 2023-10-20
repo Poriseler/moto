@@ -16,10 +16,13 @@ from article.serializers import ArticleSerializer, ArticleDetailSerializer, Imag
 IMAGES_URL = reverse('article:image-list')
 
 
-def images_upload_url(article_id):
-    """Created and returns and image upload URL."""
+def thumbnail_upload_url(article_id):
+    """Created and returns and thumbnail upload URL."""
     return reverse('article:article-upload-thumbnail', args=[article_id])
 
+def photos_upload_url(article_id):
+    """Created and returns and image upload URL."""
+    return reverse('article:article-upload-photos', args=[article_id])
 
 def create_user(email='user@example.com', password='testpass123'):
     """Creates sample user."""
@@ -105,3 +108,30 @@ class PublicImageApiTests(TestCase):
 
         self.assertEqual(
             res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+class PrivateImageApiTests(TestCase):
+    """Tests authorized requests to Image Api."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = create_user()
+        self.article = create_article(user=self.user)
+        self.client.force_authenticate(self.user)
+
+    def tearDown(self) -> None:
+        return super().tearDown()
+
+    def test_upload_image_success(self):
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as image_file:
+            img = Im.new('RGB', (10, 10))
+            img.save(image_file, format='JPEG')
+            image_file.seek(0)
+            url = photos_upload_url(self.article.slug)
+            payload = {
+                'photo' : image_file
+            }
+            res = self.client.post(url, payload, format='multipart')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+

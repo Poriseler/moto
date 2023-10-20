@@ -76,7 +76,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
         article = self.get_object()
         data = [{'photo': photo, 'article': article.id}
                 for photo in request.data.getlist('photo')]
-        
+
         serializer = self.get_serializer(data=data, many=True)
 
         if serializer.is_valid():
@@ -101,7 +101,6 @@ class ImagesViewSet(viewsets.ReadOnlyModelViewSet):
         queryset = self.queryset
         article_id = self.request.query_params.get('article-id', None)
         if article_id:
-            # print(article_id)
             return queryset.filter(article__id__exact=article_id).order_by('-id')
         return queryset
 

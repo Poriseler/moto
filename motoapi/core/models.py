@@ -2,12 +2,14 @@
 Database models.
 """
 
+from collections.abc import Iterable
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.utils.text import slugify
 from motoapi import settings
 import os
 import uuid
-
+from core.custom_mixins import ResizeImageMixin
 
 def thumbnail_file_path(instance, filename):
     """Generates file path for thumbnail."""
@@ -28,11 +30,14 @@ def image_file_path(instance, filename):
 class Tag(models.Model):
     """Tag object."""
     name = models.CharField(max_length=255)
-    slug = models.SlugField()
+    slug = models.SlugField(null=False, blank=True)
 
     def __str__(self) -> str:
         return self.name
 
+    def save(self, *args, **kwargs):
+        self.slug = slugify(self.name)
+        return super().save(*args, **kwargs)
 
 class UserManager(BaseUserManager):
     """Manager for users."""
@@ -68,7 +73,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = 'email'
 
 
-class Article(models.Model):
+class Article(models.Model, ResizeImageMixin):
     """Article object."""
     CATEGORY_CHOICES = [
         ('newsy','Newsy'),
@@ -80,18 +85,29 @@ class Article(models.Model):
     header = models.CharField(max_length=255)
     lead = models.TextField(max_length=500)
     main_text = models.TextField()
-    slug = models.SlugField()
+    slug = models.SlugField(blank=True, null=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
                              on_delete=models.SET_NULL)
     tags = models.ManyToManyField('Tag')
-    thumbnail = models.ImageField(null=True, upload_to=thumbnail_file_path)
+    thumbnail = models.ImageField(null=True, blank=True, upload_to=thumbnail_file_path)
     category = models.CharField(max_length=255, choices=CATEGORY_CHOICES, default='newsy')
 
     def __str__(self) -> str:
         return self.header
 
+    def save(self, *args, **kwargs):
+        self.slug = slugify(self.header)
+        if self.thumbnail.width > 800 or self.thumbnail.height > 600:
+            self.resize(self.thumbnail, (800, 600))
+        return super().save(*args, **kwargs)
 
-class Image(models.Model):
+
+class Image(models.Model, ResizeImageMixin):
     """Image object."""
     article = models.ForeignKey(Article, on_delete=models.CASCADE)
     photo = models.ImageField(upload_to=image_file_path)
+
+    def save(self, *args, **kwargs):
+        if self.pk is None and (self.photo.width >1200 or self.photo.height > 800):
+            self.resize(self.photo, (1200, 800))
+        return super().save(*args, **kwargs)
