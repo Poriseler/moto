@@ -416,6 +416,7 @@ class ThumbnailUploadTests(TestCase):
             img.save(image_file, format='JPEG')
             image_file.seek(0)
             payload = {'thumbnail': image_file}
+            print(payload)
             res = self.client.post(url, payload, format='multipart')
 
         self.article.refresh_from_db()

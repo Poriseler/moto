@@ -11,6 +11,7 @@ import os
 import uuid
 from core.custom_mixins import ResizeImageMixin
 
+
 def thumbnail_file_path(instance, filename):
     """Generates file path for thumbnail."""
     ext = os.path.splitext(filename)[1]
@@ -38,6 +39,7 @@ class Tag(models.Model):
     def save(self, *args, **kwargs):
         self.slug = slugify(self.name)
         return super().save(*args, **kwargs)
+
 
 class UserManager(BaseUserManager):
     """Manager for users."""
@@ -76,10 +78,10 @@ class User(AbstractBaseUser, PermissionsMixin):
 class Article(models.Model, ResizeImageMixin):
     """Article object."""
     CATEGORY_CHOICES = [
-        ('newsy','Newsy'),
-        ('felietony','Felietony'),
-        ('relacje','Relacje'),
-        ('testy','Testy')
+        ('newsy', 'Newsy'),
+        ('felietony', 'Felietony'),
+        ('relacje', 'Relacje'),
+        ('testy', 'Testy')
     ]
 
     header = models.CharField(max_length=255)
@@ -89,15 +91,19 @@ class Article(models.Model, ResizeImageMixin):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
                              on_delete=models.SET_NULL)
     tags = models.ManyToManyField('Tag')
-    thumbnail = models.ImageField(null=True, blank=True, upload_to=thumbnail_file_path)
-    category = models.CharField(max_length=255, choices=CATEGORY_CHOICES, default='newsy')
+    thumbnail = models.ImageField(
+        null=True, blank=True, upload_to=thumbnail_file_path)
+    category = models.CharField(
+        max_length=255, choices=CATEGORY_CHOICES, default='newsy')
+    photos_source = models.CharField(
+        max_length=255, default='materiały producenta')
 
     def __str__(self) -> str:
         return self.header
 
     def save(self, *args, **kwargs):
         self.slug = slugify(self.header)
-        if self.thumbnail.width > 800 or self.thumbnail.height > 600:
+        if self.thumbnail and (self.thumbnail.width > 800 or self.thumbnail.height > 600):
             self.resize(self.thumbnail, (800, 600))
         return super().save(*args, **kwargs)
 
@@ -108,6 +114,6 @@ class Image(models.Model, ResizeImageMixin):
     photo = models.ImageField(upload_to=image_file_path)
 
     def save(self, *args, **kwargs):
-        if self.pk is None and (self.photo.width >1200 or self.photo.height > 800):
+        if self.pk is None and (self.photo.width > 1200 or self.photo.height > 800):
             self.resize(self.photo, (1200, 800))
         return super().save(*args, **kwargs)

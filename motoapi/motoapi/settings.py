@@ -27,7 +27,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     '127.0.0.1',
-    'http://127.0.0.1:5173'
+    '127.0.0.1:8000',
+    '127.0.0.1:5173'
 ]
 
 
@@ -63,8 +64,12 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'motoapi.urls'
 
 CORS_ALLOWED_ORIGINS = [
-    "http://127.0.0.1:5173"
+    "http://127.0.0.1",
+    "http://127.0.0.1:5173",
+    'http://localhost'
 ]
+
+CORS_ALLOW_CREDENTIALS = True
 
 TEMPLATES = [
     {

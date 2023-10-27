@@ -57,8 +57,6 @@ class ArticleViewSet(viewsets.ModelViewSet):
             queryset = queryset[:int(limit)]
         return queryset
 
-
-
     @action(methods=['POST'], detail=True, url_path='upload-thumbnail')
     def upload_thumbnail(self, request, slug=None):
         """Upload image to article."""
